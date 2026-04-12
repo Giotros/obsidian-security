@@ -203,7 +203,7 @@ OBSIDIAN SECURITY
 Your server has security holes.
 Let's find them.
 
-giorgostrox@gmail.com
+contact@obsidian.security
 ```
 
 ### Sound

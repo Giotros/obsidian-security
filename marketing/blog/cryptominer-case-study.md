@@ -76,4 +76,4 @@ That's exactly why automated, regular security audits exist. Not because admins 
 
 *Want to know what's running on your servers? Obsidian Security offers automated security audits for cPanel/WHM environments. One command, no installs, professional PDF report.*
 
-*Get a free mini-check: giorgostrox@gmail.com*
+*Get a free mini-check: contact@obsidian.security*

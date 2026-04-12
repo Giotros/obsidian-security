@@ -102,7 +102,7 @@ Services:
 • Pro Audit — €149 (expert review)
 • Monthly Guard — €99/month (continuous protection)
 
-Contact: giorgostrox@gmail.com
+Contact: contact@obsidian.security
 
 #serversecurity #cybersecurity #wordpress #cpanel #securityaudit
 ```
@@ -301,7 +301,7 @@ All on a single production server.
 Obsidian Security identifies threats in minutes.
 Starting at €49.
 
-→ giorgostrox@gmail.com
+→ contact@obsidian.security
 ```
 
 **Stories/Reels Caption:**
@@ -364,7 +364,7 @@ You need a page where ad traffic lands.
 2. **Problem**: "48,000 bot requests. Hidden cryptominers. Unpatched CVEs. All found on a single production server."
 3. **Solution**: The 7-phase audit, PDF report, remediation guidance
 4. **Pricing cards**: Quick Scan (€49), Pro Audit (€149), Monthly Guard (€99/mo)
-5. **Contact form**: Name, Email, Server count, Message → sends to giorgostrox@gmail.com
+5. **Contact form**: Name, Email, Server count, Message → sends to contact@obsidian.security
 6. **Trust signals**: "Pure Bash — zero dependencies", "No permanent installation", "Your IP always whitelisted"
 
 ---
