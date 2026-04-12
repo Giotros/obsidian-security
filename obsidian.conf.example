@@ -1,0 +1,58 @@
+# =============================================================================
+# Obsidian Security Suite — Example Configuration
+# Copy to obsidian.conf and edit to your needs
+# =============================================================================
+
+# --- General ---
+hostname = myserver.example.com
+log_level = INFO
+
+# --- Firewall ---
+# auto-detected: csf, iptables, nftables, or none
+firewall = auto
+allow_ban_private = false
+auto_ban_critical = false
+
+# --- File Monitoring ---
+monitor_path = /var/www
+scan_interval = 21600
+monitor_preset = wordpress
+
+# --- Alerts ---
+# Minimum severity to trigger alerts: INFO, LOW, MEDIUM, HIGH, CRITICAL
+alert_min_severity = MEDIUM
+
+# Telegram Bot alerts (get token from @BotFather)
+telegram_bot_token = 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+telegram_chat_id = -1001234567890
+
+# Webhook (JSON POST to your endpoint)
+webhook_url = https://hooks.example.com/obsidian
+webhook_secret = your-hmac-secret-here
+
+# Email alerts
+alert_email = admin@example.com
+
+# --- BotGuard Thresholds ---
+rate_window = 60
+rate_max_requests = 120
+rate_ban_threshold = 300
+
+# --- Health Thresholds ---
+cpu_warn_threshold = 80
+cpu_crit_threshold = 95
+mem_warn_threshold = 80
+mem_crit_threshold = 95
+disk_warn_threshold = 80
+disk_crit_threshold = 90
+php_min_idle_time = 30
+
+# --- API Server ---
+api_token = your-64-char-hex-token-here
+api_port = 443
+
+# --- Sync Agent ---
+# central_url = https://central-server.com/cgi-bin/obsidian-api.sh
+# central_token = same-token-as-api_token
+# sync_interval = 60
+# agent_name = server01

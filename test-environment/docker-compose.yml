@@ -1,0 +1,51 @@
+version: '3.8'
+
+# Obsidian Security Suite — Docker Test Environment
+# Usage:
+#   docker-compose up -d
+#   docker-compose exec obsidian bash
+#   (then run obsidian commands inside)
+
+services:
+  obsidian:
+    build:
+      context: ..
+      dockerfile: test-environment/Dockerfile
+    container_name: obsidian-test
+    hostname: obsidian-test
+    privileged: true  # Needed for iptables
+    stdin_open: true
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+      - obsidian-data:/opt/obsidian/data
+      - obsidian-logs:/opt/obsidian/logs
+    networks:
+      - obsidian-net
+
+  # Optional: second container to test multi-server sync
+  obsidian-agent:
+    build:
+      context: ..
+      dockerfile: test-environment/Dockerfile
+    container_name: obsidian-agent-test
+    hostname: obsidian-agent-01
+    privileged: true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - obsidian
+    networks:
+      - obsidian-net
+
+volumes:
+  obsidian-data:
+  obsidian-logs:
+
+networks:
+  obsidian-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

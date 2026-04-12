@@ -1,0 +1,81 @@
+# =============================================================================
+# Obsidian Security Suite — Bad Bot User-Agents
+# User-Agent patterns for known malicious or aggressive bots
+# Format: one pattern per line (grep -i compatible)
+# Lines starting with # are comments
+# =============================================================================
+
+# --- Aggressive SEO Crawlers (high request rates, ignore robots.txt) ---
+Bytespider
+AhrefsBot
+SemrushBot
+MJ12bot
+DotBot
+PetalBot
+BLEXBot
+DataForSeoBot
+Sogou
+BaiduSpider
+YandexBot
+Applebot/
+
+# --- AI Training Crawlers ---
+GPTBot
+CCBot
+ChatGPT-User
+anthropic-ai
+Claude-Web
+Google-Extended
+FacebookBot
+
+# --- Vulnerability Scanners ---
+Nikto
+sqlmap
+Nmap
+masscan
+zgrab
+ZmEu
+Nuclei
+dirbuster
+gobuster
+wpscan
+joomla.*scanner
+droopescan
+WPScan
+Acunetix
+Nessus
+OpenVAS
+
+# --- Scraping / Spam Tools ---
+python-requests
+Go-http-client
+libwww-perl
+Wget/
+curl/
+Java/
+Scrapy
+PhantomJS
+HeadlessChrome
+Puppeteer
+Selenium
+HttpClient
+lwp-trivial
+
+# --- Known Malicious Bots ---
+Havij
+Morfeus
+Toata
+BlackWidow
+CherryPicker
+EmailCollector
+EmailSiphon
+WebBandit
+EmailWolf
+ExtractorPro
+Xaldon_WebSpider
+
+# --- Generic Suspicious Patterns ---
+bot.*spider.*crawler
+^Mozilla/4\.0$
+^$
+^-$

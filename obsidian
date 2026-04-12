@@ -1,0 +1,658 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Obsidian Security Suite — Unified CLI
+# One command to protect your servers: firewall, file integrity,
+# malware detection, bot blocking, health monitoring, and multi-server sync
+#
+# Usage: obsidian <module> <command> [options]
+#
+# Modules:
+#   ban       — IP ban management (ban, unban, list, history, import, export)
+#   scan      — File integrity scanning (baseline, full, verify, monitor)
+#   malware   — Malware & cryptominer detection (scan, processes, crons, quarantine)
+#   bots      — Bot detection & blocking (analyze, scan-ua, scanners, auto-ban)
+#   health    — System health monitoring (check, cpu, memory, disk, php, connections)
+#   whitelist — IP whitelist management (add, remove, list, cleanup)
+#   alert     — Alert management (test, history)
+#   agent     — Sync agent control (start, stop, status)
+#   status    — Overall Obsidian status
+# =============================================================================
+
+set -euo pipefail
+
+# Resolve installation directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export OBSIDIAN_DIR="${OBSIDIAN_DIR:-${SCRIPT_DIR}}"
+export OBSIDIAN_DATA="${OBSIDIAN_DATA:-${OBSIDIAN_DIR}/data}"
+export OBSIDIAN_LOGS="${OBSIDIAN_LOGS:-${OBSIDIAN_DIR}/logs}"
+export OBSIDIAN_RUN="${OBSIDIAN_RUN:-/var/run/obsidian}"
+
+# Source all libraries
+source "${OBSIDIAN_DIR}/lib/common.sh"
+source "${OBSIDIAN_DIR}/lib/banner.sh"
+source "${OBSIDIAN_DIR}/lib/alert.sh"
+source "${OBSIDIAN_DIR}/lib/whitelist.sh"
+source "${OBSIDIAN_DIR}/lib/firewall.sh"
+source "${OBSIDIAN_DIR}/lib/monitor.sh"
+source "${OBSIDIAN_DIR}/lib/correlate.sh"
+source "${OBSIDIAN_DIR}/lib/malware.sh"
+source "${OBSIDIAN_DIR}/lib/botguard.sh"
+source "${OBSIDIAN_DIR}/lib/health.sh"
+source "${OBSIDIAN_DIR}/lib/audit.sh"
+
+# Load config if exists
+load_config 2>/dev/null || true
+init_directories 2>/dev/null || true
+
+# =============================================================================
+# HELP / USAGE
+# =============================================================================
+
+show_usage() {
+    show_banner
+
+    cat << 'USAGE'
+  USAGE: obsidian <module> <command> [options]
+
+  MODULES:
+
+    ban <command>              IP Ban Management
+      ban <ip> [--reason ".."] [--by admin]   Ban an IP address
+      unban <ip>                              Remove IP ban
+      list                                    Show all active bans
+      history [--count N]                     Show ban history
+      import <file>                           Import bans from file
+      export <file>                           Export bans to file
+      emergency <ip> [--reason ".."]          Emergency ban (all layers, instant)
+
+    scan <command>             File Integrity Monitoring
+      baseline <path> [--preset wordpress]    Generate file hash baseline
+      full [path]                             Full integrity scan vs baseline
+      verify <file>                           Verify single file against baseline
+      monitor <path>                          Start real-time file monitoring
+      correlate <file> [--time ".."]          IP correlation for a file change
+
+    malware <command>          Malware & Cryptominer Detection
+      scan [path]                             Full malware scan (all phases)
+      processes                               Scan running processes only
+      crons                                   Audit cron jobs only
+      files [path]                            Filesystem scan only
+      quarantine list                         Show quarantined files
+      quarantine restore <id>                 Restore quarantined file
+
+    bots <command>             Bot Detection & Blocking
+      analyze [logfile]                       Full bot analysis
+      rates [logfile]                         Request rate analysis
+      scan-ua [logfile]                       Bad User-Agent scan
+      scanners [logfile]                      Vulnerability scanner detection
+      auto-ban [logfile] [--dry-run]          Auto-ban detected bots
+      htaccess                                Generate .htaccess blocking rules
+
+    health <command>           System Health Monitor
+      check                                   Full health check (all metrics)
+      cpu                                     CPU & load monitoring
+      memory                                  Memory & swap status
+      disk                                    Disk space analysis
+      php                                     PHP process & config check
+      connections                             Network connection analysis
+      security                                Security posture assessment
+
+    whitelist <command>        IP Whitelist Management
+      add <ip> [--reason ".."] [--expires N]  Add IP to whitelist
+      remove <ip>                             Remove from whitelist
+      list                                    Show all whitelisted IPs
+      cleanup                                 Remove expired entries
+
+    alert <command>            Alert System
+      test                                    Send test alert to all channels
+      history [--count N]                     Show alert history
+
+    agent <command>            Sync Agent (multi-server)
+      start                                   Start sync agent daemon
+      stop                                    Stop sync agent
+      status                                  Check agent status
+
+    status                     Show overall Obsidian status
+    version                    Show version information
+    help                       Show this help message
+
+  EXAMPLES:
+    obsidian ban 45.33.32.156 --reason "DDoS source" --by george
+    obsidian malware scan /home
+    obsidian bots analyze /var/log/apache2/access.log
+    obsidian health check
+    obsidian scan baseline /var/www/html --preset wordpress
+    obsidian whitelist add 10.0.0.0/8 --reason "Internal network"
+
+USAGE
+}
+
+# =============================================================================
+# ARGUMENT PARSING HELPERS
+# =============================================================================
+
+get_flag() {
+    local flag="$1"
+    shift
+    while [[ $# -gt 0 ]]; do
+        if [[ "$1" == "${flag}" ]] && [[ $# -gt 1 ]]; then
+            echo "$2"
+            return 0
+        fi
+        shift
+    done
+    echo ""
+}
+
+has_flag() {
+    local flag="$1"
+    shift
+    while [[ $# -gt 0 ]]; do
+        [[ "$1" == "${flag}" ]] && return 0
+        shift
+    done
+    return 1
+}
+
+# =============================================================================
+# MODULE: BAN
+# =============================================================================
+
+cmd_ban() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        list)
+            list_bans
+            ;;
+        history)
+            local count
+            count="$(get_flag "--count" "$@")"
+            show_ban_history "${count:-30}"
+            ;;
+        import)
+            local file="${1:-}"
+            [[ -z "${file}" ]] && { echo "Usage: obsidian ban import <file>"; exit 1; }
+            import_bans "${file}"
+            ;;
+        export)
+            local file="${1:-}"
+            [[ -z "${file}" ]] && { echo "Usage: obsidian ban export <file>"; exit 1; }
+            export_bans "${file}"
+            ;;
+        emergency)
+            local ip="${1:-}"
+            [[ -z "${ip}" ]] && { echo "Usage: obsidian ban emergency <ip>"; exit 1; }
+            shift
+            local reason
+            reason="$(get_flag "--reason" "$@")"
+            emergency_ban "${ip}" "${reason:-Emergency ban}"
+            ;;
+        unban)
+            local ip="${1:-}"
+            [[ -z "${ip}" ]] && { echo "Usage: obsidian ban unban <ip>"; exit 1; }
+            shift
+            local by
+            by="$(get_flag "--by" "$@")"
+            unban_ip "${ip}" "${by:-admin}"
+            ;;
+        ""|help)
+            echo "Usage: obsidian ban <ip|unban|list|history|import|export|emergency>"
+            ;;
+        *)
+            # Default: treat subcmd as an IP to ban
+            local ip="${subcmd}"
+            local reason
+            reason="$(get_flag "--reason" "$@")"
+            local by
+            by="$(get_flag "--by" "$@")"
+            ban_ip "${ip}" "${reason:-Manual ban}" "${by:-admin}" "manual"
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: SCAN (File Integrity)
+# =============================================================================
+
+cmd_scan() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        baseline)
+            local path="${1:-}"
+            [[ -z "${path}" ]] && { echo "Usage: obsidian scan baseline <path> [--preset wordpress]"; exit 1; }
+            shift || true
+            local preset
+            preset="$(get_flag "--preset" "$@")"
+            generate_baseline "${path}" "${preset}"
+            ;;
+        full)
+            local path="${1:-$(get_config 'monitor_path' '/var/www')}"
+            full_integrity_scan "${path}"
+            ;;
+        verify)
+            local file="${1:-}"
+            [[ -z "${file}" ]] && { echo "Usage: obsidian scan verify <file>"; exit 1; }
+            verify_file "${file}"
+            ;;
+        monitor)
+            local path="${1:-$(get_config 'monitor_path' '/var/www')}"
+            start_realtime_monitor "${path}"
+            ;;
+        correlate)
+            local file="${1:-}"
+            [[ -z "${file}" ]] && { echo "Usage: obsidian scan correlate <file> [--time 'YYYY-MM-DD HH:MM:SS']"; exit 1; }
+            shift || true
+            local time
+            time="$(get_flag "--time" "$@")"
+            correlate_ip_detailed "${file}" "${time:-$(date '+%Y-%m-%d %H:%M:%S')}"
+            ;;
+        ""|help)
+            echo "Usage: obsidian scan <baseline|full|verify|monitor|correlate>"
+            ;;
+        *)
+            echo "Unknown scan command: ${subcmd}"
+            echo "Usage: obsidian scan <baseline|full|verify|monitor|correlate>"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: MALWARE
+# =============================================================================
+
+cmd_malware() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        scan)
+            local path="${1:-/home}"
+            full_malware_scan "${path}"
+            ;;
+        processes)
+            print_header "Process Scanner"
+            scan_processes
+            ;;
+        crons)
+            print_header "Cron Job Auditor"
+            scan_cron_jobs
+            ;;
+        files)
+            local path="${1:-/home}"
+            print_header "Filesystem Scanner"
+            scan_filesystem "${path}"
+            ;;
+        quarantine)
+            local qcmd="${1:-list}"
+            shift || true
+            case "${qcmd}" in
+                list)    list_quarantine ;;
+                restore)
+                    local id="${1:-}"
+                    [[ -z "${id}" ]] && { echo "Usage: obsidian malware quarantine restore <id>"; exit 1; }
+                    restore_quarantine "${id}"
+                    ;;
+                *)       echo "Usage: obsidian malware quarantine <list|restore>" ;;
+            esac
+            ;;
+        ""|help)
+            echo "Usage: obsidian malware <scan|processes|crons|files|quarantine>"
+            ;;
+        *)
+            echo "Unknown malware command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: BOTS
+# =============================================================================
+
+cmd_bots() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        analyze)
+            local logfile="${1:-}"
+            full_bot_analysis "${logfile}"
+            ;;
+        rates)
+            local logfile="${1:-}"
+            analyze_request_rates "${logfile}"
+            ;;
+        scan-ua)
+            local logfile="${1:-}"
+            scan_user_agents "${logfile}"
+            ;;
+        scanners)
+            local logfile="${1:-}"
+            detect_scanners "${logfile}"
+            ;;
+        auto-ban)
+            local logfile="${1:-}"
+            shift || true
+            local dry_run="false"
+            has_flag "--dry-run" "$@" && dry_run="true"
+            auto_ban_bots "${logfile}" "${dry_run}"
+            ;;
+        htaccess)
+            generate_htaccess_rules
+            ;;
+        ""|help)
+            echo "Usage: obsidian bots <analyze|rates|scan-ua|scanners|auto-ban|htaccess>"
+            ;;
+        *)
+            echo "Unknown bots command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: HEALTH
+# =============================================================================
+
+cmd_health() {
+    local subcmd="${1:-check}"
+    shift || true
+
+    case "${subcmd}" in
+        check)       full_health_check ;;
+        cpu)         print_header "CPU & Load"; check_cpu ;;
+        memory)      print_header "Memory"; check_memory ;;
+        disk)        print_header "Disk Space"; check_disk ;;
+        php)         print_header "PHP Status"; check_php ;;
+        connections) print_header "Network Connections"; check_connections ;;
+        security)    check_security_posture ;;
+        ""|help)
+            echo "Usage: obsidian health <check|cpu|memory|disk|php|connections|security>"
+            ;;
+        *)
+            echo "Unknown health command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: WHITELIST
+# =============================================================================
+
+cmd_whitelist() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        add)
+            local ip="${1:-}"
+            [[ -z "${ip}" ]] && { echo "Usage: obsidian whitelist add <ip> [--reason '..'] [--expires seconds]"; exit 1; }
+            shift || true
+            local reason
+            reason="$(get_flag "--reason" "$@")"
+            local expires
+            expires="$(get_flag "--expires" "$@")"
+            local expire_epoch=0
+            if [[ -n "${expires}" ]]; then
+                expire_epoch=$(( $(epoch_now) + expires ))
+            fi
+            whitelist_add "${ip}" "${reason:-Manual addition}" "admin" "${expire_epoch}"
+            ;;
+        remove)
+            local ip="${1:-}"
+            [[ -z "${ip}" ]] && { echo "Usage: obsidian whitelist remove <ip>"; exit 1; }
+            whitelist_remove "${ip}"
+            ;;
+        list)
+            whitelist_list
+            ;;
+        cleanup)
+            whitelist_cleanup
+            ;;
+        ""|help)
+            echo "Usage: obsidian whitelist <add|remove|list|cleanup>"
+            ;;
+        *)
+            echo "Unknown whitelist command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: ALERT
+# =============================================================================
+
+cmd_alert() {
+    local subcmd="${1:-}"
+    shift || true
+
+    case "${subcmd}" in
+        test)    send_test_alert ;;
+        history)
+            local count
+            count="$(get_flag "--count" "$@")"
+            show_alert_history "${count:-20}"
+            ;;
+        ""|help)
+            echo "Usage: obsidian alert <test|history>"
+            ;;
+        *)
+            echo "Unknown alert command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MODULE: AGENT
+# =============================================================================
+
+cmd_agent() {
+    local subcmd="${1:-}"
+    shift || true
+
+    local agent_script="${OBSIDIAN_DIR}/agent/obsidian-agent.sh"
+    if [[ ! -f "${agent_script}" ]]; then
+        echo "Agent script not found: ${agent_script}"
+        exit 1
+    fi
+
+    case "${subcmd}" in
+        start)  bash "${agent_script}" start ;;
+        stop)   bash "${agent_script}" stop ;;
+        status) bash "${agent_script}" status ;;
+        ""|help)
+            echo "Usage: obsidian agent <start|stop|status>"
+            ;;
+        *)
+            echo "Unknown agent command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# OVERALL STATUS
+# =============================================================================
+
+cmd_status() {
+    show_mini_banner
+    echo ""
+
+    print_header "Obsidian Status"
+
+    # Version & install info
+    print_row "Version" "${OBSIDIAN_VERSION}"
+    print_row "Install path" "${OBSIDIAN_DIR}"
+    print_row "Data path" "${OBSIDIAN_DATA}"
+    print_row "Hostname" "$(hostname -f 2>/dev/null || hostname)"
+
+    echo ""
+
+    # Ban count
+    local bans=0
+    [[ -f "${BANS_FILE}" ]] && bans="$(wc -l < "${BANS_FILE}" 2>/dev/null || echo 0)"
+    print_row "Active bans" "${bans}"
+
+    # Whitelist count
+    local wl=0
+    [[ -f "${WHITELIST_FILE}" ]] && wl="$(wc -l < "${WHITELIST_FILE}" 2>/dev/null || echo 0)"
+    print_row "Whitelisted IPs" "${wl}"
+
+    # Alert count
+    local alerts=0
+    [[ -f "${OBSIDIAN_DATA}/alert_history.log" ]] && alerts="$(wc -l < "${OBSIDIAN_DATA}/alert_history.log" 2>/dev/null || echo 0)"
+    print_row "Total alerts" "${alerts}"
+
+    # Agent status
+    if is_running "agent"; then
+        print_row "Sync agent" "${GREEN}running${NC}"
+    else
+        print_row "Sync agent" "${YELLOW}stopped${NC}"
+    fi
+
+    # Firewall
+    print_row "Firewall" "$(detect_firewall)"
+    print_row "Web server" "$(detect_webserver)"
+    print_row "PHP version" "$(detect_php)"
+
+    echo ""
+
+    # Quick health
+    local cpu_usage
+    cpu_usage="$(top -bn1 2>/dev/null | grep "Cpu(s)" | awk '{printf "%.0f", 100 - $8}' || echo "?")"
+    local mem_percent
+    local mem_total mem_avail
+    mem_total="$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)"
+    mem_avail="$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || echo 0)"
+    if [[ "${mem_total}" -gt 0 ]]; then
+        mem_percent=$(( ((mem_total - mem_avail) * 100) / mem_total ))
+    else
+        mem_percent="?"
+    fi
+    local disk_percent
+    disk_percent="$(df / 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%' || echo "?")"
+
+    print_row "CPU" "${cpu_usage}%"
+    print_row "Memory" "${mem_percent}%"
+    print_row "Disk (/)" "${disk_percent}%"
+}
+
+# =============================================================================
+# MODULE: AUDIT
+# =============================================================================
+
+cmd_audit() {
+    local subcmd="${1:-run}"
+    shift || true
+
+    case "${subcmd}" in
+        run)
+            local path
+            path="$(get_flag "--path" "$@")"
+            local output
+            output="$(get_flag "--output" "$@")"
+            run_full_audit "${path:-/home}" "${output}"
+            ;;
+        report)
+            local audit_id="${1:-}"
+            if [[ -z "${audit_id}" ]]; then
+                echo "Usage: obsidian audit report <audit_id> [--company 'Name'] [--output file.pdf]"
+                echo ""
+                echo "Available audits:"
+                ls -1 "${AUDIT_DIR}"/*.json 2>/dev/null | while read -r f; do
+                    echo "  $(basename "${f}" .json)"
+                done
+                return
+            fi
+            shift || true
+            local company
+            company="$(get_flag "--company" "$@")"
+            local pdf_output
+            pdf_output="$(get_flag "--output" "$@")"
+
+            local json_file="${AUDIT_DIR}/${audit_id}.json"
+            [[ ! -f "${json_file}" ]] && { echo "Audit not found: ${audit_id}"; exit 1; }
+
+            pdf_output="${pdf_output:-${AUDIT_DIR}/${audit_id}_report.pdf}"
+
+            python3 "${OBSIDIAN_DIR}/tools/generate-report.py" \
+                "${json_file}" "${pdf_output}" \
+                --company "${company:-Obsidian Security}" 2>/dev/null || {
+                echo "Error: PDF generation failed. Ensure reportlab is installed:"
+                echo "  pip install reportlab"
+                exit 1
+            }
+
+            echo -e "${GREEN}Report generated: ${pdf_output}${NC}"
+            ;;
+        list)
+            print_header "Audit History"
+            if [[ -d "${AUDIT_DIR}" ]]; then
+                ls -1 "${AUDIT_DIR}"/*.json 2>/dev/null | while read -r f; do
+                    local name
+                    name="$(basename "${f}" .json)"
+                    local size
+                    size="$(du -h "${f}" 2>/dev/null | awk '{print $1}')"
+                    echo "  ${name} (${size})"
+                done
+            else
+                echo "  No audits found."
+            fi
+            ;;
+        ""|help)
+            echo "Usage: obsidian audit <run|report|list>"
+            echo ""
+            echo "  run    [--path /home] [--output file.json]  Run full security audit"
+            echo "  report <audit_id> [--company 'Name']        Generate PDF report"
+            echo "  list                                         List past audits"
+            ;;
+        *)
+            echo "Unknown audit command: ${subcmd}"
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
+
+main() {
+    local module="${1:-}"
+    shift || true
+
+    case "${module}" in
+        ban)        cmd_ban "$@" ;;
+        scan)       cmd_scan "$@" ;;
+        malware)    cmd_malware "$@" ;;
+        bots)       cmd_bots "$@" ;;
+        health)     cmd_health "$@" ;;
+        whitelist)  cmd_whitelist "$@" ;;
+        alert)      cmd_alert "$@" ;;
+        agent)      cmd_agent "$@" ;;
+        audit)      cmd_audit "$@" ;;
+        status)     cmd_status ;;
+        version)    show_mini_banner ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        "")
+            show_usage
+            ;;
+        *)
+            echo -e "${RED}Unknown module: ${module}${NC}"
+            echo "Run 'obsidian help' for usage information."
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

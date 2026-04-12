@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obsidian Security — Server Security Audits</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #1a1a2e;
+            --accent: #16213e;
+            --highlight: #0f3460;
+            --blue: #2196F3;
+            --green: #4CAF50;
+            --red: #F44336;
+            --orange: #FF9800;
+            --text: #333;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* === NAVIGATION === */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            z-index: 1000;
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        nav .logo span { color: var(--blue); }
+        nav .nav-links a {
+            color: #adb5bd;
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        nav .nav-links a:hover { color: white; }
+        nav .nav-links a.cta-btn {
+            background: var(--blue);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        nav .nav-links a.cta-btn:hover { background: #1976D2; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* === HERO === */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+            padding: 160px 0 100px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: radial-gradient(ellipse at center right, rgba(33,150,243,0.1) 0%, transparent 70%);
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+        .hero h1 span { color: var(--blue); }
+        .hero p {
+            font-size: 1.2rem;
+            color: #adb5bd;
+            max-width: 550px;
+            margin-bottom: 35px;
+            line-height: 1.7;
+        }
+        .hero-cta {
+            display: inline-flex;
+            gap: 15px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(33,150,243,0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .btn-outline:hover {
+            border-color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* === PROBLEMS === */
+        .problems {
+            padding: 80px 0;
+            background: var(--light);
+        }
+        .problems h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        .problems .subtitle {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .problem-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            border-left: 4px solid var(--red);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .problem-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        .problem-card p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+        .problem-card .tag {
+            display: inline-block;
+            background: #FFEBEE;
+            color: var(--red);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        /* === HOW IT WORKS === */
+        .how-it-works {
+            padding: 80px 0;
+        }
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 50px;
+            color: var(--primary);
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+        }
+        .step {
+            text-align: center;
+            position: relative;
+        }
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+        .step h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        .step p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* === WHAT WE CHECK === */
+        .checks {
+            padding: 80px 0;
+            background: var(--primary);
+            color: white;
+        }
+        .checks h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 50px;
+        }
+        .check-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+        .check-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 25px;
+        }
+        .check-item .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .check-item h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .check-item p {
+            color: #adb5bd;
+            font-size: 0.9rem;
+        }
+
+        /* === PRICING === */
+        .pricing {
+            padding: 80px 0;
+            background: var(--light);
+        }
+        .pricing h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        .pricing .subtitle {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 50px;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 950px;
+            margin: 0 auto;
+        }
+        .price-card {
+            background: white;
+            border-radius: 16px;
+            padding: 35px;
+            text-align: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
+            position: relative;
+            border: 2px solid transparent;
+        }
+        .price-card.popular {
+            border-color: var(--blue);
+            transform: scale(1.05);
+        }
+        .price-card.popular::before {
+            content: 'MOST POPULAR';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--blue);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .price-card h3 {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .price-card .price {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 15px 0;
+        }
+        .price-card .price span {
+            font-size: 1rem;
+            color: var(--gray);
+            font-weight: 400;
+        }
+        .price-card .features {
+            list-style: none;
+            text-align: left;
+            margin: 20px 0 30px;
+        }
+        .price-card .features li {
+            padding: 8px 0;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .price-card .features li::before {
+            content: '\2713';
+            color: var(--green);
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        /* === SAMPLE REPORT === */
+        .sample-report {
+            padding: 80px 0;
+        }
+        .sample-report h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        .sample-report .subtitle {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 40px;
+        }
+        .report-preview {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .report-header {
+            background: var(--primary);
+            color: white;
+            padding: 30px;
+        }
+        .report-header h3 { font-size: 1.3rem; margin-bottom: 5px; }
+        .report-header p { color: #adb5bd; font-size: 0.9rem; }
+        .report-body { padding: 30px; }
+        .report-score {
+            text-align: center;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .report-score .grade {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--red);
+        }
+        .finding {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .finding .sev {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .sev-critical { background: #FFEBEE; color: #B71C1C; }
+        .sev-high { background: #FFF3E0; color: #E65100; }
+        .sev-medium { background: #FFFDE7; color: #F57F17; }
+
+        /* === CTA === */
+        .cta-section {
+            padding: 80px 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--highlight) 100%);
+            color: white;
+            text-align: center;
+        }
+        .cta-section h2 {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+        }
+        .cta-section p {
+            color: #adb5bd;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            font-size: 1.1rem;
+        }
+
+        /* === FOOTER === */
+        footer {
+            background: var(--primary);
+            color: #6c757d;
+            padding: 40px 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        footer a { color: var(--blue); text-decoration: none; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .steps { grid-template-columns: 1fr; }
+            .price-card.popular { transform: none; }
+            nav .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+    <div class="container">
+        <a href="#" class="logo">Obsidian<span>.</span></a>
+        <div class="nav-links">
+            <a href="#how-it-works">How It Works</a>
+            <a href="#what-we-check">What We Check</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#contact" class="cta-btn">Get Your Audit</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <h1>Your server has <span>security holes</span>.<br>We find them before hackers do.</h1>
+        <p>Professional server security audits with detailed PDF reports. Automated scanning for malware, misconfigurations, bot attacks, and vulnerabilities. Results in minutes, not days.</p>
+        <div class="hero-cta">
+            <a href="#pricing" class="btn btn-primary">Get Your Audit</a>
+            <a href="#sample" class="btn btn-outline">See Sample Report</a>
+        </div>
+    </div>
+</section>
+
+<!-- Problems We Solve -->
+<section class="problems">
+    <div class="container">
+        <h2>Sound Familiar?</h2>
+        <p class="subtitle">These are real problems we see every week on client servers.</p>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <span class="tag">Happened to our client</span>
+                <h3>Hidden Cryptominer Eating CPU</h3>
+                <p>A cryptominer binary hidden in /home/user/.config/.cache was consuming all CPU, crashing PHP, and respawning via cron every 2 hours. The client thought it was a "hosting problem."</p>
+            </div>
+            <div class="problem-card">
+                <span class="tag">Common on WordPress</span>
+                <h3>Bots Hammering Your Site at 3am</h3>
+                <p>Bytespider, AhrefsBot, and vulnerability scanners send thousands of requests per hour when nobody's watching. Your server slows to a crawl. Your real visitors get 503 errors.</p>
+            </div>
+            <div class="problem-card">
+                <span class="tag">PHP 7.4 is dead</span>
+                <h3>Running End-of-Life Software</h3>
+                <p>PHP 7.4 has been EOL since November 2022. No security patches. Known vulnerabilities. Yet 40% of WordPress sites still run it. One exploit is all it takes.</p>
+            </div>
+            <div class="problem-card">
+                <span class="tag">90% disk = slow I/O</span>
+                <h3>Server Slowly Dying</h3>
+                <p>Disk 90% full, memory maxed out, PHP processes recycling every 10 seconds. The server isn't "slow" — it's screaming for help. You just need someone to listen.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>We Scan Your Server</h3>
+                <p>You give us SSH access (or run our one-liner script). Our automated tool scans everything: processes, files, cron jobs, logs, configurations, network connections.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>You Get a Report</h3>
+                <p>Within minutes, you receive a professional PDF report with a security score, all findings ranked by severity, and specific fix-it instructions for each issue.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>We Help You Fix It</h3>
+                <p>Need help implementing fixes? Our Pro and Enterprise plans include hands-on remediation. We don't just find problems — we solve them.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- What We Check -->
+<section class="checks" id="what-we-check">
+    <div class="container">
+        <h2>What We Check</h2>
+        <div class="check-grid">
+            <div class="check-item">
+                <div class="icon">&#128737;</div>
+                <h3>Malware & Cryptominers</h3>
+                <p>Hidden binaries, web shells, PHP backdoors, encoded payloads, suspicious processes consuming CPU.</p>
+            </div>
+            <div class="check-item">
+                <div class="icon">&#128270;</div>
+                <h3>Cron Job Audit</h3>
+                <p>Malicious scheduled tasks that download payloads, restart malware, or exfiltrate data.</p>
+            </div>
+            <div class="check-item">
+                <div class="icon">&#129302;</div>
+                <h3>Bot & Scanner Traffic</h3>
+                <p>Aggressive crawlers, SEO bots, vulnerability scanners (Nikto, sqlmap, WPScan) hammering your server.</p>
+            </div>
+            <div class="check-item">
+                <div class="icon">&#128274;</div>
+                <h3>File Integrity</h3>
+                <p>SHA256 verification of critical files. Detect unauthorized modifications to WordPress core, plugins, themes.</p>
+            </div>
+            <div class="check-item">
+                <div class="icon">&#9881;</div>
+                <h3>PHP & Server Config</h3>
+                <p>EOL software, aggressive recycling, misconfigured limits, missing security headers, weak SSL.</p>
+            </div>
+            <div class="check-item">
+                <div class="icon">&#128272;</div>
+                <h3>Security Posture</h3>
+                <p>Firewall status, SSH configuration, file permissions, Fail2ban, world-writable directories.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sample Report -->
+<section class="sample-report" id="sample">
+    <div class="container">
+        <h2>Sample Audit Report</h2>
+        <p class="subtitle">This is what your report looks like. Real findings, real recommendations.</p>
+        <div class="report-preview">
+            <div class="report-header">
+                <h3>Security Audit Report</h3>
+                <p>server.example.com | April 6, 2026</p>
+            </div>
+            <div class="report-body">
+                <div class="report-score">
+                    <div class="grade">D</div>
+                    <div>Security Score: 45/100</div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-critical">CRITICAL</span>
+                    <div>
+                        <strong>Hidden Executable Binary</strong><br>
+                        <small>Found: /home/user/.config/.cache/fontconfig/lib-update</small>
+                    </div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-critical">CRITICAL</span>
+                    <div>
+                        <strong>Suspicious Cron Job</strong><br>
+                        <small>Respawns binary every 2 hours via crontab</small>
+                    </div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-critical">CRITICAL</span>
+                    <div>
+                        <strong>PHP End-of-Life</strong><br>
+                        <small>PHP 7.4 — no security patches since Nov 2022</small>
+                    </div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-high">HIGH</span>
+                    <div>
+                        <strong>Disk Space Critical</strong><br>
+                        <small>90% full (32GB available of 298GB)</small>
+                    </div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-high">HIGH</span>
+                    <div>
+                        <strong>Heavy Bot Traffic</strong><br>
+                        <small>450+ requests from Bytespider, AhrefsBot, scanners</small>
+                    </div>
+                </div>
+                <div class="finding">
+                    <span class="sev sev-medium">MEDIUM</span>
+                    <div>
+                        <strong>SSH Password Auth Enabled</strong><br>
+                        <small>Vulnerable to brute-force attacks</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="container">
+        <h2>Simple Pricing</h2>
+        <p class="subtitle">No contracts. No hidden fees. Pay per audit or per month.</p>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Quick Scan</h3>
+                <div class="price">&euro;49<span>/audit</span></div>
+                <ul class="features">
+                    <li>Full automated security scan</li>
+                    <li>Professional PDF report</li>
+                    <li>Prioritized action plan</li>
+                    <li>Malware & bot detection</li>
+                    <li>Email delivery within 1 hour</li>
+                </ul>
+                <a href="#contact" class="btn btn-primary" style="width:100%;">Get Started</a>
+            </div>
+            <div class="price-card popular">
+                <h3>Pro Audit</h3>
+                <div class="price">&euro;149<span>/audit</span></div>
+                <ul class="features">
+                    <li>Everything in Quick Scan</li>
+                    <li>Manual expert review</li>
+                    <li>Hands-on remediation help</li>
+                    <li>30-min consultation call</li>
+                    <li>Follow-up scan after fixes</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="#contact" class="btn btn-primary" style="width:100%;">Get Started</a>
+            </div>
+            <div class="price-card">
+                <h3>Monthly Guard</h3>
+                <div class="price">&euro;99<span>/month</span></div>
+                <ul class="features">
+                    <li>Weekly automated scans</li>
+                    <li>Real-time monitoring</li>
+                    <li>Instant Telegram alerts</li>
+                    <li>Bot blocking management</li>
+                    <li>Monthly PDF report</li>
+                    <li>Unlimited email support</li>
+                </ul>
+                <a href="#contact" class="btn btn-primary" style="width:100%;">Get Started</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+    <div class="container">
+        <h2>Ready to find out what's lurking on your server?</h2>
+        <p>Most server owners don't know they're compromised until it's too late. Get your audit today.</p>
+        <a href="mailto:giorgostrox@gmail.com?subject=Security Audit Request&body=Hi, I'd like a security audit for my server.%0A%0AServer details:%0A- Hostname: %0A- Number of sites: %0A- Current issues (if any): " class="btn btn-primary">Request Your Audit</a>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p>Obsidian Security &copy; 2026. Built by George. Powered by real-world experience.</p>
+        <p style="margin-top: 8px;"><a href="https://github.com/yourusername/obsidian">GitHub</a></p>
+    </div>
+</footer>
+
+</body>
+</html>

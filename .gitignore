@@ -1,0 +1,20 @@
+# Data & logs (generated at runtime)
+data/
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Runtime
+/var/run/obsidian/
+*.pid
+*.lock

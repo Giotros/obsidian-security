@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obsidian Security - Cold Outreach</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;background:#f4f4f4;">
+
+<!--
+  COLD OUTREACH EMAIL
+  Target: Hosting companies, web agencies, freelance developers managing servers
+  Subject lines (test these):
+    A) "Your clients' servers might have cryptominers right now"
+    B) "We found 3 critical vulnerabilities on a cPanel server last week"
+    C) "Quick question about your server security process"
+-->
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px 0;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+<!-- Header -->
+<tr>
+<td style="background:#0a0f1a;padding:24px 40px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td>
+      <span style="color:#00d4aa;font-size:22px;font-weight:700;letter-spacing:1px;">OBSIDIAN</span>
+      <span style="color:#64748b;font-size:12px;margin-left:8px;">SECURITY</span>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+
+<!-- Body -->
+<tr>
+<td style="padding:40px;">
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 20px;">
+    Hi {{FIRST_NAME}},
+  </p>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 20px;">
+    Last week we ran a security audit on a cPanel server with 10 WordPress sites.
+    Here's what we found in under 5 minutes:
+  </p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-left:3px solid #ef4444;padding-left:16px;">
+  <tr><td>
+    <p style="font-size:15px;color:#334155;line-height:1.8;margin:0;">
+      <strong style="color:#ef4444;">&#9679;</strong> A cryptominer hidden in <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:13px;">.config/.cache/fontconfig/</code><br>
+      <strong style="color:#ef4444;">&#9679;</strong> PHP 7.4 (end-of-life since Nov 2022)<br>
+      <strong style="color:#ef4444;">&#9679;</strong> 48,000 bot requests/day from Bytespider &amp; AhrefsBot<br>
+      <strong style="color:#ef4444;">&#9679;</strong> SSH root login enabled with password authentication
+    </p>
+  </td></tr>
+  </table>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 20px;">
+    The server owner had no idea. The cryptominer had been running for <strong>3 weeks</strong>,
+    eating CPU and slowing down every site on the box.
+  </p>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 20px;">
+    We offer a <strong>quick security audit</strong> that checks for exactly these kinds of issues —
+    malware, misconfigurations, bot abuse, outdated software, and more. No software to install,
+    no ongoing commitment. Just a clear report with what's wrong and how to fix it.
+  </p>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 8px;">
+    <strong>Three options:</strong>
+  </p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="padding:12px 16px;background:#f0fdf4;border-radius:6px;margin-bottom:8px;">
+      <strong style="color:#166534;">Quick Scan (€49)</strong>
+      <span style="color:#334155;font-size:14px;"> — Automated scan with PDF report. Results in 24h.</span>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 16px;background:#eff6ff;border-radius:6px;">
+      <strong style="color:#1e40af;">Pro Audit (€149)</strong>
+      <span style="color:#334155;font-size:14px;"> — Deep manual review + remediation guidance. Results in 48h.</span>
+    </td>
+  </tr>
+  <tr><td style="height:8px;"></td></tr>
+  <tr>
+    <td style="padding:12px 16px;background:#faf5ff;border-radius:6px;">
+      <strong style="color:#7e22ce;">Monthly Guard (€99/mo)</strong>
+      <span style="color:#334155;font-size:14px;"> — Continuous monitoring + monthly reports + priority response.</span>
+    </td>
+  </tr>
+  </table>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0 0 24px;">
+    Would you be open to a quick scan on one of your servers?
+    Happy to do a <strong>free mini-check</strong> so you can see the kind of issues we catch.
+  </p>
+
+  <!-- CTA Button -->
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+  <tr>
+    <td style="background:#00d4aa;border-radius:6px;">
+      <a href="mailto:giorgostrox@gmail.com?subject=Interested%20in%20a%20security%20audit&body=Hi%2C%0A%0AI'd%20like%20to%20learn%20more%20about%20your%20security%20audit%20service.%0A%0AServer%20details%3A%0A-%20Number%20of%20sites%3A%20%0A-%20Control%20panel%3A%20%0A-%20Main%20concern%3A%20%0A"
+         style="display:inline-block;padding:14px 32px;color:#0a0f1a;font-size:16px;font-weight:600;text-decoration:none;">
+        Book a Free Mini-Check &rarr;
+      </a>
+    </td>
+  </tr>
+  </table>
+
+  <p style="font-size:16px;color:#1a1a2e;line-height:1.6;margin:0;">
+    Cheers,<br>
+    <strong>George</strong><br>
+    <span style="color:#64748b;font-size:14px;">Obsidian Security</span>
+  </p>
+
+</td>
+</tr>
+
+<!-- Footer -->
+<tr>
+<td style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
+  <p style="font-size:12px;color:#94a3b8;margin:0;line-height:1.6;">
+    Obsidian Security &bull; Server Security Audits &amp; Monitoring<br>
+    <a href="mailto:giorgostrox@gmail.com" style="color:#00d4aa;text-decoration:none;">giorgostrox@gmail.com</a>
+  </p>
+</td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+
+</body>
+</html>
