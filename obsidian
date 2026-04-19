@@ -20,8 +20,14 @@
 
 set -euo pipefail
 
-# Resolve installation directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve installation directory (follow symlinks)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [[ -L "${SCRIPT_PATH}" ]]; do
+    SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
+    SCRIPT_PATH="$(readlink "${SCRIPT_PATH}")"
+    [[ "${SCRIPT_PATH}" != /* ]] && SCRIPT_PATH="${SCRIPT_DIR}/${SCRIPT_PATH}"
+done
+SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 export OBSIDIAN_DIR="${OBSIDIAN_DIR:-${SCRIPT_DIR}}"
 export OBSIDIAN_DATA="${OBSIDIAN_DATA:-${OBSIDIAN_DIR}/data}"
 export OBSIDIAN_LOGS="${OBSIDIAN_LOGS:-${OBSIDIAN_DIR}/logs}"
