@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Obsidian Security Suite — Docker Test Environment
 # Usage:
 #   docker-compose up -d

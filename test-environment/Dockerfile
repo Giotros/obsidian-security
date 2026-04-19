@@ -57,25 +57,25 @@ RUN mkdir -p /opt/obsidian/{lib,agent,server,rules,presets,data,logs} /var/run/o
     && ln -sf /opt/obsidian/obsidian /usr/local/bin/obsidian
 
 # Create minimal config
-RUN cat > /opt/obsidian/obsidian.conf << 'EOF' \
-hostname = obsidian-test \
-log_level = INFO \
-firewall = iptables \
-allow_ban_private = true \
-auto_ban_critical = false \
-monitor_path = /var/www/html \
-alert_min_severity = LOW \
-rate_window = 60 \
-rate_max_requests = 120 \
-rate_ban_threshold = 300 \
-cpu_warn_threshold = 80 \
-cpu_crit_threshold = 95 \
-mem_warn_threshold = 80 \
-mem_crit_threshold = 95 \
-disk_warn_threshold = 80 \
-disk_crit_threshold = 90 \
-php_min_idle_time = 30 \
-EOF
+RUN printf '%s\n' \
+    "hostname = obsidian-test" \
+    "log_level = INFO" \
+    "firewall = iptables" \
+    "allow_ban_private = true" \
+    "auto_ban_critical = false" \
+    "monitor_path = /var/www/html" \
+    "alert_min_severity = LOW" \
+    "rate_window = 60" \
+    "rate_max_requests = 120" \
+    "rate_ban_threshold = 300" \
+    "cpu_warn_threshold = 80" \
+    "cpu_crit_threshold = 95" \
+    "mem_warn_threshold = 80" \
+    "mem_crit_threshold = 95" \
+    "disk_warn_threshold = 80" \
+    "disk_crit_threshold = 90" \
+    "php_min_idle_time = 30" \
+    > /opt/obsidian/obsidian.conf
 
 COPY test-environment/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
