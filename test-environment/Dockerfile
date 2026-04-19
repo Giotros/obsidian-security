@@ -46,13 +46,16 @@ RUN mkdir -p /home/mybagonline/.config/.cache/fontconfig \
 COPY . /opt/obsidian-src/
 
 # Install Obsidian manually (non-interactive)
-RUN mkdir -p /opt/obsidian/{lib,agent,server,rules,presets,data,logs} /var/run/obsidian \
+SHELL ["/bin/bash", "-c"]
+RUN mkdir -p /opt/obsidian/lib /opt/obsidian/agent /opt/obsidian/server \
+    /opt/obsidian/rules /opt/obsidian/presets /opt/obsidian/data /opt/obsidian/logs \
+    /var/run/obsidian \
     && cp /opt/obsidian-src/lib/*.sh /opt/obsidian/lib/ \
     && cp /opt/obsidian-src/obsidian /opt/obsidian/obsidian \
     && cp /opt/obsidian-src/agent/obsidian-agent.sh /opt/obsidian/agent/ \
     && cp /opt/obsidian-src/server/obsidian-api.sh /opt/obsidian/server/ \
-    && cp /opt/obsidian-src/rules/* /opt/obsidian/rules/ 2>/dev/null || true \
-    && cp /opt/obsidian-src/presets/* /opt/obsidian/presets/ 2>/dev/null || true \
+    && (cp /opt/obsidian-src/rules/* /opt/obsidian/rules/ 2>/dev/null || true) \
+    && (cp /opt/obsidian-src/presets/* /opt/obsidian/presets/ 2>/dev/null || true) \
     && chmod +x /opt/obsidian/obsidian /opt/obsidian/agent/*.sh /opt/obsidian/server/*.sh \
     && ln -sf /opt/obsidian/obsidian /usr/local/bin/obsidian
 
