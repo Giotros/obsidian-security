@@ -375,7 +375,9 @@ check_security_posture() {
     # Check for pending security updates
     if command -v apt &>/dev/null; then
         local security_updates
-        security_updates="$(apt list --upgradable 2>/dev/null | grep -c security || echo 0)"
+        security_updates="$(apt list --upgradable 2>/dev/null | grep -c security 2>/dev/null || true)"
+        security_updates="${security_updates:-0}"
+        security_updates="$(echo "${security_updates}" | tr -d '[:space:]')"
         if [[ "${security_updates}" -gt 0 ]]; then
             print_status "warn" "${security_updates} security update(s) pending"
             issues=$(( issues + 1 ))

@@ -301,43 +301,105 @@ auto_ban_bots() {
 
     log_info "Running auto-ban analysis for bots..."
 
+    # Auto-detect log file if not provided
+    if [[ -z "${log_file}" ]]; then
+        for path in \
+            /var/log/apache2/access.log \
+            /var/log/httpd/access_log \
+            /usr/local/apache/logs/access_log \
+            /var/log/nginx/access.log; do
+            [[ -f "${path}" ]] && log_file="${path}" && break
+        done
+    fi
+
+    if [[ -z "${log_file}" ]] || [[ ! -f "${log_file}" ]]; then
+        log_error "No access log found"
+        return 1
+    fi
+
     # Collect IPs from all detection methods
     declare -A ban_candidates
     declare -A ban_reasons
 
-    # Check rate abuse
-    local now
-    now="$(date +%s)"
-    local window_start=$(( now - RATE_WINDOW ))
+    # --- Method 1: Rate abuse ---
+    declare -A rate_counts
+    while IFS= read -r line; do
+        local ip
+        ip="$(echo "${line}" | awk '{print $1}')"
+        validate_ip "${ip}" || continue
+        rate_counts["${ip}"]=$(( ${rate_counts["${ip}"]:-0} + 1 ))
+    done < <(tail -5000 "${log_file}" 2>/dev/null)
 
-    # Rate-based detection (simplified inline)
-    if [[ -n "${log_file}" ]] && [[ -f "${log_file}" ]]; then
-        declare -A rate_counts
+    for ip in "${!rate_counts[@]}"; do
+        if [[ "${rate_counts[${ip}]}" -ge "${RATE_BAN_THRESHOLD}" ]]; then
+            ban_candidates["${ip}"]=1
+            ban_reasons["${ip}"]="Rate abuse: ${rate_counts[${ip}]} requests"
+        fi
+    done
+
+    # --- Method 2: Bad bot User-Agents ---
+    local -a bad_patterns=()
+    if [[ -f "${BAD_BOTS_FILE}" ]]; then
+        while IFS= read -r pattern; do
+            [[ -z "${pattern}" ]] && continue
+            [[ "${pattern}" =~ ^# ]] && continue
+            bad_patterns+=("${pattern}")
+        done < "${BAD_BOTS_FILE}"
+    fi
+    bad_patterns+=(
+        "Bytespider" "AhrefsBot" "SemrushBot" "MJ12bot" "DotBot"
+        "PetalBot" "YandexBot" "BLEXBot" "DataForSeoBot" "GPTBot" "CCBot"
+        "zgrab" "masscan" "Nuclei" "nikto" "sqlmap" "nmap"
+        "dirbuster" "gobuster" "wpscan" "python-requests" "Go-http-client"
+        "libwww-perl" "PhantomJS" "HeadlessChrome"
+    )
+
+    for pattern in "${bad_patterns[@]}"; do
         while IFS= read -r line; do
             local ip
             ip="$(echo "${line}" | awk '{print $1}')"
             validate_ip "${ip}" || continue
-            rate_counts["${ip}"]=$(( ${rate_counts["${ip}"]:-0} + 1 ))
-        done < <(tail -5000 "${log_file}" 2>/dev/null)
-
-        for ip in "${!rate_counts[@]}"; do
-            if [[ "${rate_counts[${ip}]}" -ge "${RATE_BAN_THRESHOLD}" ]]; then
+            if [[ -z "${ban_candidates[${ip}]+x}" ]]; then
                 ban_candidates["${ip}"]=1
-                ban_reasons["${ip}"]="Rate abuse: ${rate_counts[${ip}]} requests"
+                ban_reasons["${ip}"]="Bad bot UA: ${pattern}"
             fi
-        done
-    fi
+        done < <(grep -i "${pattern}" "${log_file}" 2>/dev/null | awk '{print $1}' | sort -u | while read -r uip; do grep -m1 "^${uip} " "${log_file}"; done)
+    done
 
+    # --- Method 3: Vulnerability scanners ---
+    local -a scanner_paths=( "/.env" "/wp-config.php.bak" "/wp-config.php~"
+        "/.git/config" "/phpinfo.php" "/admin/config" "/wp-login.php"
+        "/xmlrpc.php" "/.aws/credentials" "/server-status" "/debug" )
+    declare -A scanner_counts
+    for spath in "${scanner_paths[@]}"; do
+        while IFS= read -r ip; do
+            validate_ip "${ip}" || continue
+            scanner_counts["${ip}"]=$(( ${scanner_counts["${ip}"]:-0} + 1 ))
+        done < <(grep "\"[A-Z]\\+ ${spath}" "${log_file}" 2>/dev/null | awk '{print $1}')
+    done
+    for ip in "${!scanner_counts[@]}"; do
+        if [[ "${scanner_counts[${ip}]}" -ge 3 ]]; then
+            if [[ -z "${ban_candidates[${ip}]+x}" ]]; then
+                ban_candidates["${ip}"]=1
+                ban_reasons["${ip}"]="Vuln scanner: ${scanner_counts[${ip}]} probe paths"
+            fi
+        fi
+    done
+
+    # --- Apply bans ---
     local banned=0
+    local skipped=0
     for ip in "${!ban_candidates[@]}"; do
         # Skip whitelisted
         if is_whitelisted "${ip}"; then
             log_debug "Skipping whitelisted IP: ${ip}"
+            skipped=$(( skipped + 1 ))
             continue
         fi
 
         # Skip already banned
         if is_banned "${ip}"; then
+            skipped=$(( skipped + 1 ))
             continue
         fi
 
@@ -351,10 +413,12 @@ auto_ban_bots() {
         fi
     done
 
+    echo ""
     if [[ "${dry_run}" == "true" ]]; then
-        echo -e "\n  ${YELLOW}Dry run — no bans applied. Remove --dry-run to execute.${NC}"
+        echo -e "  ${YELLOW}Dry run — no bans applied. Remove --dry-run to execute.${NC}"
     else
-        echo -e "\n  Bots banned: ${BOLD}${banned}${NC}"
+        echo -e "  Bots banned: ${BOLD}${banned}${NC}"
+        [[ "${skipped}" -gt 0 ]] && echo -e "  Skipped (whitelisted/already banned): ${skipped}"
     fi
 }
 
