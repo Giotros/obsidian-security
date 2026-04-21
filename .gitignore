@@ -18,3 +18,12 @@ Thumbs.db
 /var/run/obsidian/
 *.pid
 *.lock
+
+# Internal / private (keep local only)
+marketing/
+INTERVIEW_PREP.md
+SECURITY_AUDIT.md
+QUICKSTART_TESTING.md
+TESTING_GUIDE.md
+Obsidian_Security_Capabilities.docx
+sample-report.pdf
