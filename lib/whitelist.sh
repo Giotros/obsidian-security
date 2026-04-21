@@ -52,7 +52,7 @@ whitelist_remove() {
     local count_before
     count_before="$(wc -l < "${WHITELIST_FILE}" 2>/dev/null || echo 0)"
 
-    grep -Fv "^${ip}|" "${WHITELIST_FILE}" > "${WHITELIST_FILE}.tmp" 2>/dev/null || true
+    grep -v "^$(printf '%s' "${ip}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${WHITELIST_FILE}" > "${WHITELIST_FILE}.tmp" 2>/dev/null || true
     mv "${WHITELIST_FILE}.tmp" "${WHITELIST_FILE}"
 
     local count_after

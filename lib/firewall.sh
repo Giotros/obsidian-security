@@ -100,7 +100,7 @@ unban_ip() {
     # Remove from bans file
     acquire_lock "${OBSIDIAN_DATA}/bans.lock" 10 || return 1
     if [[ -f "${BANS_FILE}" ]]; then
-        grep -Fv "^${ip}|" "${BANS_FILE}" > "${BANS_FILE}.tmp" 2>/dev/null || true
+        grep -v "^$(printf '%s' "${ip}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${BANS_FILE}" > "${BANS_FILE}.tmp" 2>/dev/null || true
         mv "${BANS_FILE}.tmp" "${BANS_FILE}"
     fi
     release_lock "${OBSIDIAN_DATA}/bans.lock"
@@ -114,7 +114,7 @@ unban_ip() {
 
 is_banned() {
     local ip="$1"
-    [[ -f "${BANS_FILE}" ]] && grep -Fq "^${ip}|" "${BANS_FILE}" 2>/dev/null
+    [[ -f "${BANS_FILE}" ]] && grep -q "^$(printf '%s' "${ip}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${BANS_FILE}" 2>/dev/null
 }
 
 get_ban_info() {

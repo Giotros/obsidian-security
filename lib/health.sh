@@ -398,7 +398,8 @@ check_security_posture() {
 
     # World-writable directories in web root
     local www_writable
-    www_writable="$(find /var/www /home/*/public_html -type d -perm -o+w 2>/dev/null | wc -l || echo 0)"
+    www_writable="$(find /var/www /home/*/public_html -type d -perm -o+w 2>/dev/null | wc -l | tr -d '[:space:]')"
+    www_writable="${www_writable:-0}"
     if [[ "${www_writable}" -gt 0 ]]; then
         print_status "warn" "${www_writable} world-writable web directories"
         issues=$(( issues + 1 ))

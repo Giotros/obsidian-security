@@ -189,7 +189,7 @@ action_push() {
     fi
 
     # Check if already banned
-    if [[ -f "${API_BANS_FILE}" ]] && grep -Fq "^${ip}|" "${API_BANS_FILE}" 2>/dev/null; then
+    if [[ -f "${API_BANS_FILE}" ]] && grep -q "^$(printf '%s' "${ip}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${API_BANS_FILE}" 2>/dev/null; then
         send_success "Already banned" "{\"ip\":\"${ip}\"}"
     fi
 
@@ -225,7 +225,7 @@ action_remove() {
     if [[ -f "${API_BANS_FILE}" ]]; then
         local before
         before="$(wc -l < "${API_BANS_FILE}")"
-        grep -Fv "^${ip}|" "${API_BANS_FILE}" > "${API_BANS_FILE}.tmp" 2>/dev/null || true
+        grep -v "^$(printf '%s' "${ip}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${API_BANS_FILE}" > "${API_BANS_FILE}.tmp" 2>/dev/null || true
         mv "${API_BANS_FILE}.tmp" "${API_BANS_FILE}"
         local after
         after="$(wc -l < "${API_BANS_FILE}")"
@@ -297,7 +297,7 @@ action_heartbeat() {
     # Update heartbeat record (replace existing or add new)
     local temp="${API_HEARTBEATS_FILE}.tmp"
     if [[ -f "${API_HEARTBEATS_FILE}" ]]; then
-        grep -Fv "^${agent_name}|" "${API_HEARTBEATS_FILE}" > "${temp}" 2>/dev/null || true
+        grep -v "^$(printf '%s' "${agent_name}" | sed 's/[.[\*^$()+?{|]/\\&/g')|" "${API_HEARTBEATS_FILE}" > "${temp}" 2>/dev/null || true
     else
         > "${temp}"
     fi
